@@ -7,20 +7,6 @@ A lightweight real-time chat application built with JavaScript, enabling instant
 
 ---
 
-## 📑 Table of Contents
-
-- [Features](#features)  
-- [Technology Stack](#technology-stack)  
-- [Repository Structure](#repository-structure)  
-- [Installation & Setup](#installation--setup)  
-- [Usage](#usage)  
-- [Environment Variables](#environment-variables)  
-- [Scripts](#scripts)  
-- [Contributing](#contributing)  
-- [License](#license)  
-- [Acknowledgments](#acknowledgments)  
-
----
 
 ## 🚀 Features
 
