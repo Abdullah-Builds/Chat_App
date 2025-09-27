@@ -1,0 +1,17 @@
+{
+  "name": "simple-chat",
+  "version": "1.0.0",
+  "description": "Simple one-to-one chat with Node.js and Socket.IO",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "http": "^0.0.1-security",
+    "nodemon": "^3.1.10",
+    "socket": "^1.0.92",
+    "socket.io": "^4.8.1"
+  }
+}

@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>WebRTC 2-Person Chat (Socket.IO)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    /* Dark Theme */
+    :root {
+      --bg:#0b1220;
+      --panel:#111a30;
+      --border:#26345c;
+      --text:#e7eefc;
+      --accent:#3b82f6;
+      --danger:#ef4444;
+    }
+
+    /* Light Theme */
+    body.light {
+      --bg:#f8fafc;
+      --panel:#ffffff;
+      --border:#cbd5e1;
+      --text:#0f172a;
+      --accent:#0284c7;
+      --danger:#dc2626;
+    }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 { margin-top: 0; }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    input, button {
+      font-size: 16px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: none;
+      transition: all 0.2s ease;
+    }
+    input {
+      background: var(--panel);
+      color: var(--text);
+      outline: 1px solid var(--border);
+    }
+    button { background: var(--accent); color: white; cursor: pointer; }
+    button.secondary { background: var(--border); }
+    button.danger { background: var(--danger); }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Video Area */
+    .videos {
+      position: relative;
+      margin-top: 12px;
+      width: 100%;
+      height: 70vh;
+      background: var(--panel);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .videos.split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      background: var(--panel);
+      border-radius: 16px;
+      object-fit: cover;
+    }
+
+    #localVideo {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      width: 220px;
+      height: 140px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      cursor: move;
+      resize: both;
+      overflow: hidden;
+      background: var(--panel);
+    }
+    #localVideo.hidden {
+      display: none;
+    }
+
+    /* Status + Footer */
+    .status { margin-top: 10px; opacity: .85; font-size: 14px; }
+    footer { margin-top: 24px; opacity: .65; font-size: 14px; }
+    .tag {
+      display:inline-block;
+      padding: 2px 8px;
+      border-radius:999px;
+      background:var(--panel);
+      border:1px solid var(--border);
+      margin-left:6px;
+    }
+
+    /* Theme Toggle */
+    .theme-toggle {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    .theme-toggle:hover { opacity: 0.9; }
+  </style>
+
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js" defer></script>
+</head>
+<body>
+  <button id="themeToggle" class="theme-toggle">🌙</button>
+
+  <div class="app">
+    <h1>WebRTC 2-Person Chat<span class="tag">User-Friendly Demo</span></h1>
+
+    <div class="controls">
+      <input id="roomInput" placeholder="room name (e.g., demo1)" />
+      <button id="joinBtn">Join Room</button>
+      <button id="leaveBtn" class="secondary" disabled>Leave</button>
+      <button id="toggleMicBtn" class="secondary" disabled>Mute</button>
+      <button id="toggleCamBtn" class="secondary" disabled>Camera Off</button>
+      <button id="hideSelfBtn" class="secondary" disabled>Hide My Video</button>
+      <button id="splitScreenBtn" class="secondary">Split View</button>
+      <button id="hangupBtn" class="danger" disabled>Hang Up</button>
+    </div>
+
+    <div class="videos" id="videoContainer">
+      <video id="remoteVideo" autoplay playsinline></video>
+      <video id="localVideo" autoplay playsinline muted></video>
+    </div>
+
+    <div class="status" id="status">Idle.</div>
+
+    <footer>
+      Uses <code>RTCPeerConnection</code> and <code>Socket.IO</code>. Includes draggable & resizable self-view.
+    </footer>
+  </div>
+
+  <script>
+    // ---------------- Theme Toggle ----------------
+    const themeToggleBtn = document.getElementById("themeToggle");
+    function applyTheme(theme) {
+      if (theme === "light") {
+        document.body.classList.add("light");
+      } else {
+        document.body.classList.remove("light");
+      }
+      localStorage.setItem("theme", theme);
+    }
+    themeToggleBtn.addEventListener("click", () => {
+      const current = document.body.classList.contains("light") ? "light" : "dark";
+      applyTheme(current === "light" ? "dark" : "light");
+    });
+    applyTheme(localStorage.getItem("theme") || "dark");
+
+    // ---------------- DOM Elements ----------------
+    const $ = (sel) => document.querySelector(sel);
+    const log = (msg) => { console.log(msg); $("#status").textContent = msg; };
+
+    const roomInput = $("#roomInput");
+    const joinBtn = $("#joinBtn");
+    const leaveBtn = $("#leaveBtn");
+    const toggleMicBtn = $("#toggleMicBtn");
+    const toggleCamBtn = $("#toggleCamBtn");
+    const hideSelfBtn = $("#hideSelfBtn");
+    const splitScreenBtn = $("#splitScreenBtn");
+    const hangupBtn = $("#hangupBtn");
+    const localVideo = $("#localVideo");
+    const remoteVideo = $("#remoteVideo");
+    const videoContainer = $("#videoContainer");
+
+    // ---------------- State ----------------
+    let socket, roomName = null, pc, localStream = null;
+    let makingOffer = false, ignoreOffer = false;
+    let isMuted = false, camOff = false, selfHidden = false;
+    let splitMode = false;
+    const rtcConfig = { iceServers: [ { urls: "stun:stun.l.google.com:19302" } ] };
+
+    // ---------------- UI State ----------------
+    function setInRoom(inRoom) {
+      joinBtn.disabled = inRoom;
+      leaveBtn.disabled = !inRoom;
+      toggleMicBtn.disabled = !inRoom;
+      toggleCamBtn.disabled = !inRoom;
+      hideSelfBtn.disabled = !inRoom;
+      hangupBtn.disabled = !inRoom;
+      roomInput.disabled = inRoom;
+    }
+
+    // ---------------- Media ----------------
+    async function ensureLocalMedia() {
+      if (localStream) return localStream;
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localVideo.srcObject = localStream;
+      return localStream;
+    }
+
+    // ---------------- Peer Connection ----------------
+    function createPeer() {
+      pc = new RTCPeerConnection(rtcConfig);
+      pc.onicecandidate = ({ candidate }) => { if (candidate) socket.emit("signal", { room: roomName, type: "ice-candidate", data: candidate }); };
+      pc.ontrack = (event) => { remoteVideo.srcObject = event.streams[0]; };
+      for (const track of localStream.getTracks()) { pc.addTrack(track, localStream); }
+      return pc;
+    }
+
+    function initSocket() {
+      socket = io();
+      socket.on("connect", () => log("Connected to signaling server."));
+      socket.on("joined", async ({ room, peers }) => {
+        log(`Joined room "${room}". Peers present: ${peers}.`);
+        await ensureLocalMedia();
+        createPeer();
+        if (peers >= 1) await makeOffer();
+        setInRoom(true);
+      });
+      socket.on("room_full", () => log("Room is full (2 users max)."));
+      socket.on("peer_left", () => { log("Peer left."); cleanupCall(true); });
+      socket.on("signal", async ({ type, data }) => {
+        switch (type) {
+          case "offer": await handleOffer(data); break;
+          case "answer": await pc.setRemoteDescription(new RTCSessionDescription(data)); break;
+          case "ice-candidate": try { await pc.addIceCandidate(data); } catch {} break;
+        }
+      });
+    }
+
+    async function handleOffer(data) {
+      if (!pc) { await ensureLocalMedia(); createPeer(); }
+      await pc.setRemoteDescription(new RTCSessionDescription(data));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit("signal", { room: roomName, type: "answer", data: pc.localDescription });
+    }
+
+    async function makeOffer() {
+      makingOffer = true;
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit("signal", { room: roomName, type: "offer", data: pc.localDescription });
+      makingOffer = false;
+    }
+
+    // ---------------- Buttons ----------------
+    joinBtn.onclick = async () => {
+      if (!roomInput.value.trim()) return alert("Enter a room name.");
+      if (!socket) initSocket();
+      roomName = roomInput.value.trim();
+      socket.emit("join", roomName);
+    };
+    leaveBtn.onclick = () => { cleanupCall(true); log("Left room."); };
+    hangupBtn.onclick = () => { cleanupCall(false); log("Hung up."); };
+
+    toggleMicBtn.onclick = () => {
+      if (!localStream) return;
+      isMuted = !isMuted;
+      localStream.getAudioTracks().forEach(t => t.enabled = !isMuted);
+      toggleMicBtn.textContent = isMuted ? "Unmute" : "Mute";
+    };
+
+    toggleCamBtn.onclick = () => {
+      if (!localStream) return;
+      camOff = !camOff;
+      localStream.getVideoTracks().forEach(t => t.enabled = !camOff);
+      toggleCamBtn.textContent = camOff ? "Camera On" : "Camera Off";
+    };
+
+    hideSelfBtn.onclick = () => {
+      selfHidden = !selfHidden;
+      localVideo.classList.toggle("hidden", selfHidden);
+      hideSelfBtn.textContent = selfHidden ? "Show My Video" : "Hide My Video";
+    };
+
+    splitScreenBtn.onclick = () => {
+      splitMode = !splitMode;
+      videoContainer.classList.toggle("split", splitMode);
+      localVideo.style.position = splitMode ? "static" : "absolute";
+      splitScreenBtn.textContent = splitMode ? "Overlay View" : "Split View";
+    };
+
+    // ---------------- Dragging ----------------
+    let drag = false, offsetX = 0, offsetY = 0;
+    localVideo.addEventListener("mousedown", (e) => {
+      if (splitMode) return;
+      drag = true;
+      offsetX = e.clientX - localVideo.offsetLeft;
+      offsetY = e.clientY - localVideo.offsetTop;
+    });
+    document.addEventListener("mousemove", (e) => {
+      if (drag && !splitMode) {
+        localVideo.style.left = (e.clientX - offsetX) + "px";
+        localVideo.style.top = (e.clientY - offsetY) + "px";
+      }
+    });
+    document.addEventListener("mouseup", () => drag = false);
+
+    // ---------------- Cleanup ----------------
+    function cleanupCall(leaveRoom) {
+      if (pc) { pc.close(); pc = null; }
+      if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; localVideo.srcObject = null; }
+      remoteVideo.srcObject = null;
+      if (socket && leaveRoom) { socket.disconnect(); socket = null; }
+      setInRoom(false);
+    }
+
+    setInRoom(false);
+  </script>
+</body>
+</html>

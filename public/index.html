@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My App - Connect Instantly</title>
+  <style>
+    :root {
+      /* Default Light Theme */
+      --bg:#ffffff; 
+      --panel:#f3f4f6; 
+      --border:#d1d5db; 
+      --text:#111827; 
+      --accent:#3b82f6;
+    }
+    body.dark {
+      --bg:#0b1220; 
+      --panel:#111a30; 
+      --border:#26345c; 
+      --text:#e7eefc; 
+      --accent:#3b82f6;
+    }
+    html {
+      scroll-behavior:smooth;
+    }
+    body {
+      margin:0; 
+      font-family:system-ui,sans-serif; 
+      background:var(--bg); 
+      color:var(--text);
+      text-align:center;
+      transition:background 0.3s, color 0.3s;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+    header {
+      font-size:36px; 
+      font-weight:700; 
+      margin:40px 0 16px; 
+      color:var(--accent);
+    }
+    main {
+      display:flex; 
+      flex-direction:column; 
+      align-items:center;
+      gap:20px;
+      padding:0 16px 60px;
+      flex:1;
+    }
+    .hero-image {
+      max-width:320px;
+      margin-bottom:20px;
+      transition:transform 0.3s ease;
+    }
+    .hero-image:hover {
+      transform:scale(1.05);
+    }
+    p {
+      font-size:18px; 
+      max-width:650px; 
+      opacity:0.9; 
+      margin-bottom:24px;
+    }
+    .btn-container {
+      display:flex; 
+      gap:20px;
+      flex-wrap:wrap;
+      justify-content:center;
+    }
+    .btn {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:14px 24px; 
+      border:none; 
+      border-radius:12px; 
+      font-size:18px; 
+      cursor:pointer; 
+      transition:all 0.2s;
+      text-decoration:none;
+    }
+    .btn svg {
+      width:20px;
+      height:20px;
+      fill:currentColor;
+    }
+    .btn.primary {
+      background:var(--accent); 
+      color:white;
+    }
+    .btn.primary:hover {
+      background:#2563eb;
+      box-shadow:0 4px 12px rgba(0,0,0,0.4);
+    }
+    .btn.secondary {
+      background:transparent;
+      color:var(--accent);
+      border:2px solid var(--accent);
+    }
+    .btn.secondary:hover {
+      background:var(--accent);
+      color:white;
+      box-shadow:0 4px 12px rgba(0,0,0,0.4);
+    }
+    footer {
+      text-align:center;
+      font-size:14px; 
+      opacity:0.6;
+      padding:16px;
+    }
+    /* Toggle button */
+    .theme-toggle {
+      position:fixed;
+      top:16px;
+      right:16px;
+      background:var(--panel);
+      border:2px solid var(--accent);
+      color:var(--accent);
+      padding:8px 14px;
+      border-radius:10px;
+      cursor:pointer;
+      transition:all 0.3s;
+      font-size:14px;
+      font-weight:600;
+      z-index:1000;
+    }
+    .theme-toggle:hover {
+      background:var(--accent);
+      color:white;
+      box-shadow:0 4px 12px rgba(0,0,0,0.4);
+    }
+    /* About Us */
+    #about {
+      background:var(--panel);
+      border-radius:16px;
+      margin:20px auto;
+      padding:40px 20px;
+      max-width:800px;
+    }
+    #about h2 {
+      font-size:28px;
+      color:var(--accent);
+      margin-bottom:16px;
+    }
+    #about p {
+      max-width:600px;
+      margin:0 auto 24px;
+      font-size:16px;
+      opacity:0.9;
+    }
+    .socials {
+      display:flex;
+      gap:20px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+    .social-btn {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:12px 20px;
+      border-radius:12px;
+      font-size:16px;
+      font-weight:600;
+      text-decoration:none;
+      transition:all 0.3s;
+      color:white;
+    }
+    .social-btn svg {
+      width:22px;
+      height:22px;
+      fill:white;
+    }
+    .github {
+      background:#24292f;
+    }
+    .github:hover {
+      background:#000;
+      transform:translateY(-3px);
+      box-shadow:0 4px 12px rgba(0,0,0,0.4);
+    }
+    .linkedin {
+      background:#0a66c2;
+    }
+    .linkedin:hover {
+      background:#004182;
+      transform:translateY(-3px);
+      box-shadow:0 4px 12px rgba(0,0,0,0.4);
+    }
+  </style>
+  
+</head>
+<body>
+  <button class="theme-toggle" onclick="toggleTheme()">🌙 Dark</button>
+
+  <header role="banner">Welcome to My App</header>
+  <main role="main">
+    <img src="https://cdn-icons-png.flaticon.com/512/5826/5826135.png" alt="People chatting illustration" class="hero-image">
+    <p>
+      Stay connected in real-time with our modern communication platform. Whether you prefer quick messaging or immersive face-to-face video calls, My App makes conversations simple, secure, and enjoyable.
+    </p>
+    <div class="btn-container">
+      <button class="btn primary" onclick="location.href='Message.html'">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4h16v12H5.17L4 17.17V4z"/></svg>
+        Open Chat
+      </button>
+      <button class="btn secondary" onclick="location.href='Video.html'">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 10.5V7c0-1.1-.9-2-2-2H3C1.9 5 1 5.9 1 7v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-3.5l4 4v-11l-4 4z"/></svg>
+        Start Video
+      </button>
+    </div>
+  </main>
+
+  <!-- About Us Section -->
+  <section id="about">
+    <h2>About Us</h2>
+    <p>
+      We’re a passionate team building tools that make communication fast, secure, and human.  
+      Follow us and connect with us online:
+    </p>
+    <div class="socials">
+      <a href="https://github.com/" target="_blank" class="social-btn github" aria-label="GitHub">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.09 3.29 9.39 7.86 10.92.58.11.79-.25.79-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.54-3.88-1.54-.53-1.36-1.29-1.72-1.29-1.72-1.06-.73.08-.72.08-.72 1.17.08 1.78 1.21 1.78 1.21 1.04 1.78 2.73 1.26 3.4.96.1-.75.41-1.26.74-1.55-2.55-.29-5.23-1.28-5.23-5.72 0-1.27.45-2.31 1.19-3.13-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.19a11.1 11.1 0 0 1 5.8 0c2.2-1.5 3.17-1.19 3.17-1.19.64 1.59.24 2.76.12 3.05.74.82 1.19 1.86 1.19 3.13 0 4.45-2.69 5.43-5.25 5.72.42.36.8 1.1.8 2.22 0 1.61-.01 2.9-.01 3.29 0 .3.21.66.8.55A10.52 10.52 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"/></svg>
+        GitHub
+      </a>
+      <a href="https://linkedin.com/" target="_blank" class="social-btn linkedin" aria-label="LinkedIn">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.45 20.45h-3.55v-5.4c0-1.29-.02-2.96-1.8-2.96-1.8 0-2.07 1.4-2.07 2.86v5.5H9.49V9h3.4v1.56h.05c.47-.89 1.61-1.83 3.32-1.83 3.55 0 4.21 2.34 4.21 5.38v6.34ZM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14ZM7.12 20.45H3.56V9h3.56v11.45ZM22.23 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.24.79 24 1.77 24h20.46c.98 0 1.77-.76 1.77-1.73V1.73C24 .77 23.21 0 22.23 0Z"/></svg>
+        LinkedIn
+      </a>
+    </div>
+  </section>
+
+  <footer role="contentinfo">© 2025 My App. All rights reserved.</footer>
+
+  <script>
+    function toggleTheme() {
+      document.body.classList.toggle("dark");
+      const btn = document.querySelector(".theme-toggle");
+      if (document.body.classList.contains("dark")) {
+        btn.textContent = "☀️ Light";
+      } else {
+        btn.textContent = "🌙 Dark";
+      }
+    }
+  </script>
+</body>
+</html>
