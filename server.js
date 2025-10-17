@@ -1,50 +1,3 @@
-// const express = require("express");
-// const http = require("http");
-// const { Server } = require("socket.io");
-// const path = require("path");
-
-// const app = express();
-// const server = http.createServer(app);
-// const io = new Server(server);
-
-// // serve static files from "public" folder
-// app.use(express.static(path.join(__dirname, "public")));
-
-// let waitingUser = null;
-
-// io.on("connection", (socket) => {
-//   console.log("✅ User connected:", socket.id);
-
-//   if (waitingUser) {
-//     const room = `room-${waitingUser.id}-${socket.id}`;
-//     socket.join(room);
-//     waitingUser.join(room);
-
-//     socket.emit("matched", { room, partner: waitingUser.id });
-//     waitingUser.emit("matched", { room, partner: socket.id });
-
-//     console.log(`🔗 Matched ${waitingUser.id} and ${socket.id} in room: ${room}`);
-//     waitingUser = null;
-//   } else {
-//     waitingUser = socket;
-//     socket.emit("waiting", { message: "Waiting for a partner..." });
-//   }
-
-//   socket.on("message", ({ room, text }) => {
-//     io.to(room).emit("message", { sender: socket.id, text });
-//   });
-
-  
-//   socket.on("disconnect", () => {
-//     if (waitingUser === socket) {
-//       waitingUser = null;
-//     }
-//   });
-// });
-
-// server.listen(3000, () => console.log("🚀 Server running at http://localhost:3000"));
-// server.js
-
 // server.js
 import express from "express";
 import { createServer } from "http";
@@ -62,21 +15,21 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: "*" } });
 
-// serve static frontend
+// Serve static frontend (public folder)
 app.use(express.static(path.join(__dirname, "public")));
 
 // Handle Socket.IO connections
 io.on("connection", (socket) => {
   console.log("New connection:", socket.id);
 
-  // attach video call events
+  // Attach WebRTC signaling handlers
   registerVideoHandlers(io, socket);
 
-  // attach chat events
+  // Attach chat message handlers
   registerChatHandlers(io, socket);
 });
 
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
-  console.log(`Server running: http://localhost:${PORT}`);
+  console.log(`✅ Server running at: http://localhost:${PORT}`);
 });

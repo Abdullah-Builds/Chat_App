@@ -4,38 +4,101 @@
   <meta charset="UTF-8">
   <title>2-Person Chatroom with Names</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    :root { --bg:#0b1220; --panel:#111a30; --border:#26345c; --text:#e7eefc; --accent:#3b82f6; }
-    body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); color:var(--text);
-           display:flex; flex-direction:column; height:100vh; }
-    header { padding:12px; background:var(--panel); border-bottom:1px solid var(--border);
-             font-size:18px; font-weight:600; }
-    #messages { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:8px; }
-    .msg { padding:8px 12px; border-radius:12px; max-width:70%; word-wrap:break-word; }
-    .me { align-self:flex-end; background:var(--accent); color:white; }
-    .other { align-self:flex-start; background:var(--panel); border:1px solid var(--border); }
-    .system { align-self:center; font-size:14px; opacity:0.7; }
-    form { display:flex; border-top:1px solid var(--border); }
-    input { flex:1; padding:12px; border:none; outline:none; background:var(--panel); color:var(--text); font-size:16px; }
-    button { padding:12px 20px; border:none; background:var(--accent); color:white; cursor:pointer; font-size:16px; }
+    :root {
+      --bg:#0b1220;
+      --panel:#111a30;
+      --border:#26345c;
+      --text:#e7eefc;
+      --accent:#3b82f6;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      font-family: system-ui, sans-serif;
+    }
+
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 1rem;
+    }
+
+    .msg {
+      padding: 0.5rem 0.75rem;
+      border-radius: 12px;
+      max-width: 70%;
+      word-wrap: break-word;
+    }
+
+    .me {
+      align-self: flex-end;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .other {
+      align-self: flex-start;
+      background: var(--panel);
+      border: 1px solid var(--border);
+    }
+
+    .system {
+      align-self: center;
+      font-size: 0.875rem;
+      opacity: 0.7;
+    }
+
+    form {
+      border-top: 1px solid var(--border);
+      background: var(--panel);
+      padding: 0.5rem;
+    }
+
+    input {
+      background: var(--panel);
+      color: var(--text);
+    }
+
+    button {
+      color: #fff;
+    }
   </style>
 </head>
 <body>
-  <header>💬 Random 2-Person Chat</header>
-  <div id="messages"></div>
-  <form id="chatForm">
-    <input id="msgInput" placeholder="Type a message..." autocomplete="off">
-    <button>Send</button>
-  </form>
 
+  <header class="p-2 text-center">💬 Random 2-Person Chat</header>
+
+  <div id="messages" class="flex-grow-1"></div>
+
+  <form id="chatForm" class="d-flex">
+    <input id="msgInput" class="form-control me-2" placeholder="Type a message..." autocomplete="off">
+    <button type="submit" class="btn">Send</button>
+  </form>
+  
   <script src="/socket.io/socket.io.js"></script>
   <script>
+    
     const socket = io();
     const form = document.getElementById("chatForm");
     const input = document.getElementById("msgInput");
     const messagesDiv = document.getElementById("messages");
 
-    // Ask for username once
+    
     const username = prompt("Enter your name:") || "Guest";
     socket.emit("setName", username);
 

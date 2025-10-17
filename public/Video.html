@@ -1,4 +1,4 @@
-<!doctype html>
+<!-- <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -337,5 +337,459 @@
 
     setInRoom(false);
   </script>
+</body>
+</html> -->
+
+
+
+
+<!-- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WebRTC Multi-Peer Chat Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --accent: #3b82f6;
+      --danger: #ef4444;
+      --panel: #111a30;
+      --border: #26345c;
+      --bg: #0b1220;
+      --text: #e7eefc;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    .videos {
+      position: relative;
+      background: var(--panel);
+      border-radius: 1rem;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 70vh;
+      margin-top: 1rem;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 1rem;
+      background: var(--panel);
+    }
+
+    #localVideo {
+      position: absolute;
+      bottom: 1rem;
+      right: 1rem;
+      width: 220px;
+      height: 140px;
+      border: 2px solid var(--border);
+      border-radius: 0.75rem;
+      cursor: move;
+      resize: both;
+      overflow: hidden;
+      background: var(--panel);
+    }
+
+    #localVideo.hidden {
+      display: none;
+    }
+
+    .status {
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+      opacity: 0.85;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      border-radius: 999px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      margin-left: 0.5rem;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h3 mb-0">WebRTC Multi-Peer Chat <span class="tag">Demo</span></h1>
+      <button id="themeToggle" class="btn btn-primary">Toggle Theme</button>
+    </div>
+
+    <div class="row g-2 mb-3">
+      <div class="col-md-3">
+        <input id="roomInput" class="form-control" placeholder="Room name (e.g. demo)">
+      </div>
+      <div class="col-md-2">
+        <input id="maxPeersInput" type="number" class="form-control" min="2" max="10" value="2">
+      </div>
+      <div class="col-auto">
+        <button id="createBtn" class="btn btn-primary">Create Room</button>
+      </div>
+      <div class="col-auto">
+        <button id="joinBtn" class="btn btn-primary">Join Room</button>
+      </div>
+      <div class="col-auto">
+        <button id="leaveBtn" class="btn btn-secondary" disabled>Leave</button>
+      </div>
+      <div class="col-auto">
+        <button id="toggleMicBtn" class="btn btn-secondary" disabled>Mute</button>
+      </div>
+      <div class="col-auto">
+        <button id="toggleCamBtn" class="btn btn-secondary" disabled>Camera Off</button>
+      </div>
+      <div class="col-auto">
+        <button id="hideSelfBtn" class="btn btn-secondary" disabled>Hide My Video</button>
+      </div>
+      <div class="col-auto">
+        <button id="hangupBtn" class="btn btn-danger" disabled>Hang Up</button>
+      </div>
+    </div>
+
+    <div class="videos position-relative">
+      <video id="remoteVideo" autoplay playsinline></video>
+      <video id="localVideo" autoplay playsinline muted></video>
+    </div>
+
+    <div class="status" id="status">Idle.</div>
+
+    <footer class="mt-3 text-muted">
+      Uses <code>RTCPeerConnection</code> and <code>Socket.IO</code>. Includes draggable & resizable self-view.
+    </footer>
+  </div>
+
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+  // Elements
+  const roomInput = document.getElementById("roomInput");
+  const maxPeersInput = document.getElementById("maxPeersInput");
+  const createBtn = document.getElementById("createBtn");
+  const joinBtn = document.getElementById("joinBtn");
+  const leaveBtn = document.getElementById("leaveBtn");
+  const toggleMicBtn = document.getElementById("toggleMicBtn");
+  const toggleCamBtn = document.getElementById("toggleCamBtn");
+  const hideSelfBtn = document.getElementById("hideSelfBtn");
+  const hangupBtn = document.getElementById("hangupBtn");
+  const localVideo = document.getElementById("localVideo");
+  const remoteVideo = document.getElementById("remoteVideo");
+  const statusEl = document.getElementById("status");
+
+  // State
+  let socket, roomName = null, pc, localStream = null;
+  let makingOffer = false, isMuted = false, camOff = false, selfHidden = false;
+
+  const rtcConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+
+  // Logging helper
+  function log(msg) {
+    console.log(msg);
+    if(statusEl) statusEl.textContent = msg;
+  }
+
+  // Enable/disable UI based on room state
+  function setInRoom(inRoom){
+    [leaveBtn, toggleMicBtn, toggleCamBtn, hideSelfBtn, hangupBtn].forEach(btn => btn.disabled = !inRoom);
+    [createBtn, joinBtn, roomInput, maxPeersInput].forEach(el => el.disabled = inRoom);
+  }
+
+  // Get local media
+  async function ensureLocalMedia(){
+    if(localStream) return localStream;
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    localVideo.srcObject = localStream;
+    return localStream;
+  }
+
+  // Create WebRTC peer connection
+  function createPeer(){
+    pc = new RTCPeerConnection(rtcConfig);
+
+    pc.onicecandidate = ({candidate}) => {
+      if(candidate) socket.emit("signal", { room: roomName, type: "ice-candidate", data: candidate });
+    };
+
+    pc.ontrack = e => { remoteVideo.srcObject = e.streams[0]; };
+
+    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+    return pc;
+  }
+
+  // Initialize Socket.IO connection
+  function initSocket() {
+    socket = io();
+
+    socket.on("connect", () => log("Connected to signaling server."));
+
+    socket.on("created", ({ room, maxPeers }) => {
+      log(`Created room "${room}" (max peers: ${maxPeers})`);
+    });
+
+    socket.on("joined", async ({ room, peers }) => {
+      log(`Joined room "${room}". Peers present: ${peers}`);
+      await ensureLocalMedia();
+      createPeer();
+      if(peers >= 1) await makeOffer();
+      setInRoom(true);
+    });
+
+    socket.on("room_full", () => log("Room is full."));
+    socket.on("peer_left", () => { log("Peer left."); cleanupCall(true); });
+
+    socket.on("signal", async ({ type, data }) => {
+      if(!pc) return;
+      if(type === "offer") {
+        await pc.setRemoteDescription(new RTCSessionDescription(data));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        socket.emit("signal", { room: roomName, type: "answer", data: pc.localDescription });
+      } else if(type === "answer") {
+        await pc.setRemoteDescription(new RTCSessionDescription(data));
+      } else if(type === "ice-candidate") {
+        try { await pc.addIceCandidate(data); } catch {}
+      }
+    });
+  }
+
+  // Create offer
+  async function makeOffer() {
+    makingOffer = true;
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    socket.emit("signal", { room: roomName, type: "offer", data: pc.localDescription });
+    makingOffer = false;
+  }
+
+  // Button handlers
+  createBtn.onclick = () => {
+    const room = roomInput.value.trim();
+    if(!room) return alert("Enter room name");
+    if(!socket) initSocket();
+    roomName = room;
+    const maxPeers = parseInt(maxPeersInput.value) || 2;
+    socket.emit("create", { room: roomName, maxPeers });
+  };
+
+  joinBtn.onclick = () => {
+    const room = roomInput.value.trim();
+    if(!room) return alert("Enter room name");
+    if(!socket) initSocket();
+    roomName = room;
+    socket.emit("join", roomName);
+  };
+
+  leaveBtn.onclick = () => { cleanupCall(true); log("Left room."); };
+  hangupBtn.onclick = () => { cleanupCall(false); log("Hung up."); };
+
+  toggleMicBtn.onclick = () => {
+    if(!localStream) return;
+    isMuted = !isMuted;
+    localStream.getAudioTracks().forEach(t => t.enabled = !isMuted);
+    toggleMicBtn.textContent = isMuted ? "Unmute" : "Mute";
+  };
+
+  toggleCamBtn.onclick = () => {
+    if(!localStream) return;
+    camOff = !camOff;
+    localStream.getVideoTracks().forEach(t => t.enabled = !camOff);
+    toggleCamBtn.textContent = camOff ? "Camera On" : "Camera Off";
+  };
+
+  hideSelfBtn.onclick = () => {
+    selfHidden = !selfHidden;
+    localVideo.classList.toggle("hidden", selfHidden);
+    hideSelfBtn.textContent = selfHidden ? "Show My Video" : "Hide My Video";
+  };
+
+  // Cleanup
+  function cleanupCall(leaveRoom) {
+    if(pc) { pc.close(); pc = null; }
+    if(localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; localVideo.srcObject = null; }
+    remoteVideo.srcObject = null;
+    if(socket && leaveRoom) { socket.disconnect(); socket = null; }
+    setInRoom(false);
+  }
+
+  setInRoom(false);
+</script>
+
+</body>
+</html> -->
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Random 2-Person Video Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background:#0b1220; color:#e7eefc; font-family:system-ui,sans-serif; min-height:100vh; }
+    .videos { position:relative; background:#111a30; border-radius:1rem; overflow:hidden; display:flex; justify-content:center; align-items:center; height:70vh; margin-top:1rem; }
+    video { width:100%; height:100%; object-fit:cover; border-radius:1rem; background:#111a30; }
+    #localVideo { position:absolute; bottom:1rem; right:1rem; width:220px; height:140px; border:2px solid #26345c; border-radius:0.75rem; cursor:move; resize:both; overflow:hidden; background:#111a30; }
+    #localVideo.hidden { display:none; }
+    .status { margin-top:0.5rem; font-size:0.875rem; opacity:0.85; }
+  </style>
+</head>
+<body>
+<div class="container py-4">
+  <h1 class="h3 mb-3">Random 2-Person Video Chat</h1>
+
+  <div class="mb-2">
+    <button id="joinRandomBtn" class="btn btn-primary">Join Random Video</button>
+    <button id="leaveBtn" class="btn btn-secondary" disabled>Leave</button>
+    <button id="toggleMicBtn" class="btn btn-secondary" disabled>Mute</button>
+    <button id="toggleCamBtn" class="btn btn-secondary" disabled>Camera Off</button>
+    <button id="hideSelfBtn" class="btn btn-secondary" disabled>Hide My Video</button>
+    <button id="hangupBtn" class="btn btn-danger" disabled>Hang Up</button>
+  </div>
+
+  <div class="videos" id="videoContainer">
+    <video id="remoteVideo" autoplay playsinline></video>
+    <video id="localVideo" autoplay playsinline muted></video>
+  </div>
+
+  <div class="status" id="status">Idle.</div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const joinRandomBtn = document.getElementById("joinRandomBtn");
+const leaveBtn = document.getElementById("leaveBtn");
+const toggleMicBtn = document.getElementById("toggleMicBtn");
+const toggleCamBtn = document.getElementById("toggleCamBtn");
+const hideSelfBtn = document.getElementById("hideSelfBtn");
+const hangupBtn = document.getElementById("hangupBtn");
+const localVideo = document.getElementById("localVideo");
+const remoteVideo = document.getElementById("remoteVideo");
+const statusEl = document.getElementById("status");
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (!hangupBtn.disabled) {
+  joinRandomBtn.disabled = true; 
+} else {
+  joinRandomBtn.disabled = false; 
+}} )
+
+
+
+let socket, pc, localStream = null, roomName = null;
+let isMuted=false, camOff=false, selfHidden=false;
+const rtcConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+
+function log(msg){ console.log(msg); statusEl.textContent = msg; }
+function setInRoom(inRoom){
+  [leaveBtn,toggleMicBtn,toggleCamBtn,hideSelfBtn,hangupBtn].forEach(b=>b.disabled=!inRoom);
+  joinRandomBtn.disabled=inRoom;
+}
+
+async function ensureLocalMedia(){
+  if(localStream) return localStream;
+  localStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+  localVideo.srcObject = localStream;
+  return localStream;
+}
+
+function createPeer(){
+  pc = new RTCPeerConnection(rtcConfig);
+  pc.onicecandidate = ({candidate})=>{ if(candidate) socket.emit("signal",{room:roomName,type:"ice-candidate",data:candidate}); };
+  pc.ontrack = e=>{ remoteVideo.srcObject=e.streams[0]; };
+  localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+  return pc;
+}
+
+function initSocket(){
+  socket = io();
+
+  socket.on("connect", ()=>log("Connected to signaling server."));
+
+  socket.on("waiting", msg => log(msg));
+
+  socket.on("joined", async ({room, peerId})=>{
+    roomName=room;
+    log(`Connected to partner (${peerId})`);
+    await ensureLocalMedia();
+    createPeer();
+    setInRoom(true);
+    if(peerId) await makeOffer();
+  });
+
+  socket.on("signal", async ({type, data})=>{
+    if(!pc) return;
+    if(type==="offer"){ await pc.setRemoteDescription(new RTCSessionDescription(data));
+      const ans = await pc.createAnswer();
+      await pc.setLocalDescription(ans);
+      socket.emit("signal",{room:roomName,type:"answer",data:pc.localDescription});
+    } else if(type==="answer"){ await pc.setRemoteDescription(new RTCSessionDescription(data)); }
+    else if(type==="ice-candidate"){ try{ await pc.addIceCandidate(data); }catch{} }
+  });
+
+  socket.on("peer_left", ()=>{ log("Partner left."); cleanupCall(true); });
+}
+
+async function makeOffer(){
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  socket.emit("signal",{room:roomName,type:"offer",data:pc.localDescription});
+}
+
+// Buttons
+joinRandomBtn.onclick=()=>{
+  if(!socket) initSocket();
+  socket.emit("joinRandom");
+};
+
+leaveBtn.onclick = ()=>{ cleanupCall(true); log("Left room."); };
+hangupBtn.onclick = ()=>{ cleanupCall(false); log("Hung up."); };
+
+toggleMicBtn.onclick = ()=>{
+  if(!localStream) return;
+  isMuted=!isMuted;
+  localStream.getAudioTracks().forEach(t=>t.enabled=!isMuted);
+  toggleMicBtn.textContent=isMuted?"Unmute":"Mute";
+};
+
+toggleCamBtn.onclick = ()=>{
+  if(!localStream) return;
+  camOff=!camOff;
+  localStream.getVideoTracks().forEach(t=>t.enabled=!camOff);
+  toggleCamBtn.textContent=camOff?"Camera On":"Camera Off";
+};
+
+hideSelfBtn.onclick = ()=>{
+  selfHidden=!selfHidden;
+  localVideo.classList.toggle("hidden",selfHidden);
+  hideSelfBtn.textContent=selfHidden?"Show My Video":"Hide My Video";
+};
+
+function cleanupCall(leaveRoom){
+  if(pc){ pc.close(); pc=null; }
+  if(localStream){ localStream.getTracks().forEach(t=>t.stop()); localStream=null; localVideo.srcObject=null; }
+  remoteVideo.srcObject=null;
+  if(socket && leaveRoom){ socket.disconnect(); socket=null; }
+  setInRoom(false);
+}
+
+setInRoom(false);
+</script>
 </body>
 </html>

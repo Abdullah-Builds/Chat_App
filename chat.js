@@ -26,7 +26,6 @@ export default function registerChatHandlers(io, socket) {
     }
   });
 
-  // Chat messages
   socket.on("chatMessage", (msg) => {
     const partnerId = socket.data.partner;
     if (partnerId) {
