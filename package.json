@@ -5,11 +5,14 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "type": "module"
   },
   "dependencies": {
+    "@ngrok/ngrok": "^1.6.0",
     "express": "^5.1.0",
     "http": "^0.0.1-security",
+    "ngrok": "^5.0.0-beta.2",
     "nodemon": "^3.1.10",
     "socket": "^1.0.92",
     "socket.io": "^4.8.1"
