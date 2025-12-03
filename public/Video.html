@@ -176,17 +176,17 @@
 </head>
 <body>
   <header>
-    <h1 class="header-title">📹 Video Chat</h1>
+    <h1 class="header-title">Video Chat</h1>
     <a href="index.html" class="back-link">← Back to Home</a>
   </header>
 
   <div class="controls">
     <button id="joinRandomBtn" class="btn btn-primary">Join Random Video</button>
     <button id="leaveBtn" class="btn btn-secondary" disabled>Leave</button>
-    <button id="toggleMicBtn" class="btn btn-secondary" disabled>🔇 Mute</button>
-    <button id="toggleCamBtn" class="btn btn-secondary" disabled>📷 Camera Off</button>
-    <button id="hideSelfBtn" class="btn btn-secondary" disabled>👁️ Hide My Video</button>
-    <button id="hangupBtn" class="btn btn-danger" disabled>📞 Hang Up</button>
+    <button id="toggleMicBtn" class="btn btn-secondary" disabled>Mute</button>
+    <button id="toggleCamBtn" class="btn btn-secondary" disabled>Camera Off</button>
+    <button id="hideSelfBtn" class="btn btn-secondary" disabled>Hide My Video</button>
+    <button id="hangupBtn" class="btn btn-danger" disabled>Hang Up</button>
   </div>
 
   <div class="videos" id="videoContainer">
@@ -482,7 +482,7 @@
       localStream.getAudioTracks().forEach(track => {
         track.enabled = !isMuted;
       });
-      toggleMicBtn.textContent = isMuted ? "🔊 Unmute" : "🔇 Mute";
+      toggleMicBtn.textContent = isMuted ? "Unmute" : "Mute";
     };
 
     toggleCamBtn.onclick = () => {
@@ -491,13 +491,13 @@
       localStream.getVideoTracks().forEach(track => {
         track.enabled = !camOff;
       });
-      toggleCamBtn.textContent = camOff ? "📷 Camera On" : "📷 Camera Off";
+      toggleCamBtn.textContent = camOff ? "Camera On" : "Camera Off";
     };
 
     hideSelfBtn.onclick = () => {
       selfHidden = !selfHidden;
       localVideo.classList.toggle("hidden", selfHidden);
-      hideSelfBtn.textContent = selfHidden ? "👁️ Show My Video" : "👁️ Hide My Video";
+      hideSelfBtn.textContent = selfHidden ? "Show My Video" : "Hide My Video";
     };
 
     // Dragging functionality for local video

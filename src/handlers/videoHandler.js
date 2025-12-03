@@ -8,7 +8,7 @@ export default function registerVideoHandlers(io, socket) {
         io.waitingQueue = [];
     }
 
-    console.log(`📹 Video handler ready for socket: ${socket.id}`);
+    console.log(`Video handler ready for socket: ${socket.id}`);
 
     socket.on(SOCKET_EVENTS.CREATE, ({ room, maxPeers }) => {
         try {
@@ -22,7 +22,7 @@ export default function registerVideoHandlers(io, socket) {
 
             if (existing) {
                 socket.emit(SOCKET_EVENTS.ROOM_FULL);
-                console.log(`❌ ${MESSAGES.ROOM_ALREADY_EXISTS(roomName)}`);
+                console.log(`${MESSAGES.ROOM_ALREADY_EXISTS(roomName)}`);
                 return;
             }
 
@@ -35,7 +35,7 @@ export default function registerVideoHandlers(io, socket) {
             socket.join(roomName);
             socket.data.room = roomName;
 
-            console.log(`✅ ${MESSAGES.ROOM_CREATED(roomName, maxPeersValue)}`);
+            console.log(`${MESSAGES.ROOM_CREATED(roomName, maxPeersValue)}`);
             socket.emit(SOCKET_EVENTS.CREATED, { room: roomName, maxPeers: maxPeersValue });
         } catch (error) {
             console.error("Error in create handler:", error);
@@ -63,7 +63,7 @@ export default function registerVideoHandlers(io, socket) {
 
             if (peers >= limit) {
                 socket.emit(SOCKET_EVENTS.ROOM_FULL);
-                console.log(`❌ ${MESSAGES.ROOM_FULL(roomName, peers, limit)}`);
+                console.log(`${MESSAGES.ROOM_FULL(roomName, peers, limit)}`);
                 return;
             }
 
@@ -71,7 +71,7 @@ export default function registerVideoHandlers(io, socket) {
             socket.data.room = roomName;
             socket.emit(SOCKET_EVENTS.JOINED, { room: roomName, peers });
 
-            console.log(`👥 ${MESSAGES.USER_JOINED(socket.id, roomName, peers, limit)}`);
+            console.log(`${MESSAGES.USER_JOINED(socket.id, roomName, peers, limit)}`);
         } catch (error) {
             console.error("Error in join handler:", error);
             socket.emit(SOCKET_EVENTS.ERROR, "Failed to join room. Please try again.");
@@ -99,11 +99,11 @@ export default function registerVideoHandlers(io, socket) {
                 socket.emit(SOCKET_EVENTS.JOINED, { room, peerId: partner.id });
                 partner.emit(SOCKET_EVENTS.JOINED, { room, peerId: socket.id });
 
-                console.log(`👥 Random pair created: ${socket.id} + ${partner.id} in "${room}"`);
+                console.log(`Random pair created: ${socket.id} + ${partner.id} in "${room}"`);
             } else {
                 io.waitingQueue.push(socket);
                 socket.emit(SOCKET_EVENTS.WAITING, MESSAGES.WAITING_FOR_PARTNER);
-                console.log(`⏳ ${socket.id} is waiting for a random partner`);
+                console.log(`${socket.id} is waiting for a random partner`);
             }
         } catch (error) {
             console.error("Error in joinRandom handler:", error);
@@ -132,12 +132,12 @@ export default function registerVideoHandlers(io, socket) {
             const room = socket.data.room;
             if (room) {
                 socket.to(room).emit(SOCKET_EVENTS.PEER_LEFT);
-                console.log(`⚠️ ${MESSAGES.USER_LEFT(socket.id, room)}`);
+                console.log(`${MESSAGES.USER_LEFT(socket.id, room)}`);
 
                 const members = io.sockets.adapter.rooms.get(room);
                 if (!members || members.size === 0) {
                     delete io.roomSettings[room];
-                    console.log(`🧹 ${MESSAGES.ROOM_DELETED(room)}`);
+                    console.log(`${MESSAGES.ROOM_DELETED(room)}`);
                 }
             }
         } catch (error) {
