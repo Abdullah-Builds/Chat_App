@@ -270,7 +270,7 @@ Edit `src/config/constants.js` to modify:
 
 ---
 
-## 🔧 Development
+## Development
 
 ### Running in Development Mode
 
